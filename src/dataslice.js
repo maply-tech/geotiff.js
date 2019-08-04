@@ -4,6 +4,7 @@ export default class DataSlice {
     this._sliceOffset = sliceOffset;
     this._littleEndian = littleEndian;
     this._bigTiff = bigTiff;
+    this._hasNativeBigInt = BigInt(1)['or'] === undefined;
   }
 
   get sliceOffset() {
@@ -82,9 +83,17 @@ export default class DataSlice {
     const left = this.readUint32(offset);
     const right = this.readUint32(offset + 4);
     if (!this._littleEndian) {
-      return Number(BigInt(left << 32) | BigInt(right));
+      if (this._hasNativeBigInt) {
+        return Number(BigInt(left << 32) | BigInt(right));
+      } else {
+        return Number(BigInt(left << 32).or(BigInt(right)));
+      }
     }
-    return Number(BigInt(right << 32) | BigInt(left));
+    if (this._hasNativeBigInt) {
+      return Number(BigInt(right << 32) | BigInt(left));
+    } else {
+      return Number(BigInt(right << 32).or(BigInt(left)));
+    }
   }
 
   readInt64(offset) {
@@ -94,11 +103,19 @@ export default class DataSlice {
       left = this.readInt32(offset);
       right = this.readUint32(offset + 4);
 
-      return Number(BigInt(left << 32) | BigInt(right));
+      if (this._hasNativeBigInt) {
+        return Number(BigInt(left << 32) | BigInt(right));
+      } else {
+        return Number(BigInt(left << 32).or(BigInt(right)));
+      }
     }
     left = this.readUint32(offset - this._sliceOffset);
     right = this.readInt32(offset - this._sliceOffset + 4);
-    return Number(BigInt(right << 32) | BigInt(left));
+    if (this._hasNativeBigInt) {
+      return Number(BigInt(right << 32) | BigInt(left));
+    } else {
+      return Number(BigInt(right << 32).or(BigInt(left)));
+    }
   }
 
   readOffset(offset) {
